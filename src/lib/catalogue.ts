@@ -43,24 +43,20 @@ const panels: PanelSeed[] = [
     code: "fbc",
     name: "Full Blood Count (FBC/CBC)",
     tests: [
-      ["WBC", "numeric", "x10^9/L", "Normal (4.0 - 10.0)"],
-      ["Lymphs", "numeric", "%", "Normal (20 - 40)"],
-      ["Mixed", "numeric", "%", "Normal (0 - 10)"],
-      ["Neut", "numeric", "%", "Normal (40 - 70)"],
-      ["RBC", "numeric", "x10^12/L", "Normal (3.5 - 5.5)"],
-      ["Haemoglobin", "numeric", "g/dl", "Normal (11.0 - 16.0)"],
-      ["Haematocrit", "numeric", "%", "Normal (35.0 - 46.0)"],
-      ["MCV", "numeric", "fl", "Normal (80 - 99.0)"],
-      ["MCH", "numeric", "pg", "Normal (26.0 - 32.0)"],
-      ["MCHC", "numeric", "g/dl", "Normal (32.0 - 36.0)"],
-      ["Lymphs (Absolute)", "numeric", "x10^9/L", "Normal (0.8-4.0)"],
-      ["MID (Absolute)", "numeric", "10^9/L", "Normal (0.1-1.5)"],
-      ["GRAN (Absolute)", "numeric", "%", "Normal (2.0-7.0)"],
-      ["RDW-CV", "numeric", "fL", "Normal (11.0 - 16.0)"],
-      ["RDW-SD", "numeric", "fL", "Normal (35.0 - 56.0)"],
-      ["PWD", "numeric", "FI", "Normal (15.0 - 17.0)"],
-      ["PCT", "numeric", "MI/I", "Normal (1.08 - 2.82)"],
-      ["P-LCR", "numeric", "%", "Normal (11.0 - 45.0)"],
+      ["Packed Cell Volume", "numeric", "%", "Male 40-54; Female 36-46; Child 34-45; 1st week 44-54"],
+      ["Hb", "numeric", "g/dl", "Male 13-17; Female 12-15; Child 11.1-16.5; 1st week 17.1-22.0"],
+      ["RBC", "numeric", "x10^12/L", "Male 4.0-6.5; Female 3.8-4.8; Child 3.9-5.2; 1st week 5.1-7.0"],
+      ["MCV", "numeric", "fl", "Adult 83-101; Child 72-96; 1st week 100-128"],
+      ["MCH", "numeric", "pg", "24-37"],
+      ["MCHC", "numeric", "g/dl", "32-37"],
+      ["WBC", "numeric", "x10^9/L", "Adult 4-10; Child 5-16; 1st week 6-26"],
+      ["Platelets", "numeric", "x10^9/L", "Adult 150-400; Child 200-450; 1st week 100-500"],
+      ["Neut", "numeric", "%", "Adult 40-75; Child (2-6 yrs) 20-45"],
+      ["Lymph", "numeric", "%", "Adult 21-40; Child (2-6 yrs) 45-70"],
+      ["Mono", "numeric", "%", "2-10"],
+      ["Eosino", "numeric", "%", "1-6"],
+      ["Baso", "numeric", "%", "0-1"],
+      ["ESR", "numeric", "Westergren mm/hr", "17-50 yrs: M 10/F <12; 51-60 yrs: M <12/F <19; 61-70 yrs: M <14/F <20; >70 yrs: M <30/F <35"],
     ],
   },
   { code: "crp", name: "C-Reactive Protein (CRP)", tests: [["C-Reactive protein (CRP)", "numeric", "mg/L", "(0 - 10)", "fbc:c-reactive-protein-crp"]] },
@@ -184,7 +180,7 @@ const panels: PanelSeed[] = [
   },
   {
     code: "tumour-markers",
-    name: "Tumor Markers",
+    name: "Tumour Markers",
     tests: [
       ["Alpha feto protein", "qualitative"], ["CEA", "qualitative"], ["CA 15-3", "qualitative"], ["CA 125", "qualitative"],
       ["Hepatitis B Core antigen", "qualitative"], ["Hepatitis B Envelope antigen", "qualitative"], ["Other tumor marker", "narrative"],
@@ -237,7 +233,7 @@ const panels: PanelSeed[] = [
       ["Serum AFB", "qualitative"], ["Blood Culture", "narrative"], ["AFB Microscopy", "narrative"],
       ["Mantoux Test", "qualitative"], ["Skin Scraping", "narrative"], ["Skin Snip", "narrative"],
       ["Stool Microscopy", "narrative"], ["Urine Microscopy", "narrative"], ["Mycology", "narrative"],
-      ["Rheumatoid Factor", "qualitative"], ["Chlamydia", "qualitative"], ["Other investigation", "narrative"],
+      ["Microfilaria (MF)", "qualitative"], ["Rheumatoid Factor", "qualitative"], ["Chlamydia", "qualitative"], ["Other investigation", "narrative"],
     ],
   },
   {
@@ -341,12 +337,23 @@ export const cataloguePanels = panels.map((panel) => ({
 
 export const catalogueTests = cataloguePanels.flatMap((panel) => panel.tests);
 
+export const antibiogramAntibiotics = [
+  ["penicillin", "Penicillin"], ["ampicillin", "Ampicillin"], ["streptomycin", "Streptomycin"],
+  ["chloramphenicol", "Chloramphenicol"], ["tetracycline", "Tetracycline"], ["erythromycin", "Erythromycin"],
+  ["septrin", "Septrin"], ["cloxacillin", "Cloxacillin"], ["sulphonamide", "Sulphonamide"],
+  ["nalidixic-acid", "Nalidixic Acid"], ["nitrofurantoin", "Nitrofurantoin"], ["colistin-s", "Colistin S."],
+  ["gentamicin", "Gentamycin / Gentamicin"], ["pefloxacin", "Pefloxacin"], ["augmentin", "Augmentin"],
+  ["amoxycillin", "Amoxycillin"], ["ceftriaxone", "Ceftriaxone"], ["ofloxacin", "Ofloxacin"],
+  ["ciprofloxacin", "Ciprofloxacin"], ["ceporex", "Ceporex"],
+] as const;
+
 export function displayPanelName(panel: string): string {
   const displayNames: Record<string, string> = {
-    EUCR: "Electrolytes, Urea and Creatinine",
-    FLP: "Lipid Profile",
-    LFT: "Liver Function Tests",
-    "Fasting blood sugar": "Biochemistry",
+    EUCR: "Electrolytes/Urea/Creatinine",
+    FLP: "Lipid Profiles",
+    LFT: "Liver Function Test",
+    "Fasting blood sugar": "Fasting Blood Sugar",
+    "Full Blood Count (FBC/CBC)": "Full Blood Count",
   };
   return displayNames[panel] ?? panel;
 }

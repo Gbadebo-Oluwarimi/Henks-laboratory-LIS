@@ -5,7 +5,7 @@ import { nextTestStatus, overallOrderStatus } from "@/lib/workflow";
 
 test("catalogue preserves fixed source references without clinically approving them", () => {
   assert.equal(cataloguePanels.length, 33);
-  assert.equal(catalogueTests.length, 164);
+  assert.equal(catalogueTests.length, 161);
   assert.ok(catalogueTests.every((item) => item.referenceApproved === false));
   assert.equal(hasSourceReference(catalogueTests.find((item) => item.name === "WBC")?.sourceReference ?? ""), true);
   assert.equal(catalogueTests.find((item) => item.name === "ESR")?.sourceReference, "Male (0 - 10); Female (0 - 15)");

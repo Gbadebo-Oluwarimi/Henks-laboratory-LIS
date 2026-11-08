@@ -17,6 +17,7 @@ const gellix = localFont({
 export const metadata: Metadata = {
   title: labBranding.name,
   description: "Laboratory patient, order, and result workflow for Henks Medical Limited",
+  icons: { icon: "/mainicon.webp" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

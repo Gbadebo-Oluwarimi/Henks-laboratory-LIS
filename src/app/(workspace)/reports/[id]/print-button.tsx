@@ -187,12 +187,6 @@ export function PrintButton({
             }
           }
 
-          const authorisation = clonedSheet.querySelector<HTMLElement>(".report-authorisation");
-          if (authorisation) {
-            authorisation.style.setProperty("margin-top", "8mm", "important");
-            authorisation.style.setProperty("padding-top", "3mm", "important");
-          }
-
           const sheetBounds = clonedSheet.getBoundingClientRect();
           const headerRow = table?.querySelector("thead tr");
           const headerBounds = headerRow?.getBoundingClientRect();

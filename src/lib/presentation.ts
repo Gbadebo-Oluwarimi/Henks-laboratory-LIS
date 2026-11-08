@@ -8,6 +8,35 @@ export function formatDate(value: Date | string): string {
   return new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(value));
 }
 
+export function splitPatientName(fullName: string): { surname: string; otherNames: string } {
+  const [surname = "", ...otherNames] = fullName.trim().split(/\s+/).filter(Boolean);
+  return { surname, otherNames: otherNames.join(" ") };
+}
+
+export function ageFromDateOfBirth(
+  dateOfBirth: string | undefined,
+  asOfDate: string,
+): { age: string; ageUnit: "days" | "months" | "years" } | null {
+  if (!dateOfBirth || !/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth) || !/^\d{4}-\d{2}-\d{2}$/.test(asOfDate)) return null;
+  const birth = new Date(`${dateOfBirth}T00:00:00.000Z`);
+  const reference = new Date(`${asOfDate}T00:00:00.000Z`);
+  if (Number.isNaN(birth.valueOf()) || Number.isNaN(reference.valueOf()) || birth > reference) return null;
+  if (birth.toISOString().slice(0, 10) !== dateOfBirth || reference.toISOString().slice(0, 10) !== asOfDate) return null;
+
+  let years = reference.getUTCFullYear() - birth.getUTCFullYear();
+  const beforeBirthday = reference.getUTCMonth() < birth.getUTCMonth() ||
+    (reference.getUTCMonth() === birth.getUTCMonth() && reference.getUTCDate() < birth.getUTCDate());
+  if (beforeBirthday) years -= 1;
+  if (years >= 1) return { age: String(years), ageUnit: "years" };
+
+  let months = (reference.getUTCFullYear() - birth.getUTCFullYear()) * 12 + reference.getUTCMonth() - birth.getUTCMonth();
+  if (reference.getUTCDate() < birth.getUTCDate()) months -= 1;
+  if (months >= 1) return { age: String(months), ageUnit: "months" };
+
+  const days = Math.floor((reference.valueOf() - birth.valueOf()) / 86_400_000);
+  return { age: String(days), ageUnit: "days" };
+}
+
 export function statusClass(status: TestStatus): string {
   return `status-badge status-${status.toLowerCase().replaceAll(" ", "-")}`;
 }

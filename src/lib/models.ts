@@ -124,11 +124,13 @@ export type LabReportDetails = {
   requestedTest: string;
   specimen: string;
   generalComment: string;
+  doctorComment: string;
   filmReport: string;
   filmRBCs: string;
   filmWBCs: string;
   filmPlatelets: string;
   filmMalaria: string;
+  antibiogram: Record<string, { isolate1: string; isolate2: string; isolate3: string }>;
 };
 
 export type ReleasedReportVersion = {

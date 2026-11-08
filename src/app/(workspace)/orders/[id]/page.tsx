@@ -15,7 +15,7 @@ import { updateOrderTests, updateReportDetails } from"@/app/actions";
 import { getDatabase } from"@/lib/mongodb";
 import type { LabOrder, ReagentLotRecord, ReagentRecord, ReagentStockMovementRecord, SpecimenRecord } from"@/lib/models";
 import { displayPanelName, hasSourceReference } from"@/lib/catalogue";
-import { formatDate, pageError, statusClass } from"@/lib/presentation";
+import { ageFromDateOfBirth, formatDate, pageError, splitPatientName, statusClass } from"@/lib/presentation";
 import { canAuthorizeReports, getCurrentUser } from"@/lib/session";
 import { ToastNotification } from"@/app/(workspace)/toast-notification";
 import { DeleteOrderButton } from "@/app/(workspace)/orders/delete-order-button";
@@ -85,7 +85,7 @@ export default async function OrderDetailsPage({
   const awaitingReview = order.tests.filter((test) => test.status ==="Awaiting Review").length;
   const enteredTests = order.tests.filter((test) => Boolean(test.result?.trim())).length;
   const editableTests = order.tests.filter((test) => test.status ==="Pending" || test.status ==="In Progress");
-  const reportDetails = order.reportDetails ?? {
+  const savedReportDetails = order.reportDetails ?? {
     surname: "",
     otherNames: order.clientSnapshot.fullName,
     laboratoryNo: order.accessionId,
@@ -97,11 +97,26 @@ export default async function OrderDetailsPage({
     requestedTest: [...new Set(order.tests.map((test) => displayPanelName(test.panel)))].join(", "),
     specimen: [...new Set(order.tests.map((test) => test.specimenType).filter(Boolean))].join(", "),
     generalComment: "",
+    doctorComment: "",
     filmReport: "",
     filmRBCs: "",
     filmWBCs: "",
     filmPlatelets: "",
     filmMalaria: "",
+    antibiogram: {},
+  };
+  const patientNameParts = splitPatientName(order.clientSnapshot.fullName);
+  const patientAge = ageFromDateOfBirth(order.clientSnapshot.dateOfBirth, savedReportDetails.date);
+  const reportDetails = {
+    ...savedReportDetails,
+    surname: savedReportDetails.surname || patientNameParts.surname,
+    otherNames: !savedReportDetails.otherNames || savedReportDetails.otherNames === order.clientSnapshot.fullName
+      ? patientNameParts.otherNames
+      : savedReportDetails.otherNames,
+    hospitalNo: savedReportDetails.hospitalNo || order.clientSnapshot.patientId,
+    age: patientAge?.age ?? savedReportDetails.age,
+    ageUnit: patientAge?.ageUnit ?? savedReportDetails.ageUnit,
+    sex: order.clientSnapshot.sex ?? savedReportDetails.sex,
   };
   const canEditReportDetails = !order.authorizedAt && ["Administrator", "Reception", "Laboratory Staff"].includes(user?.role ?? "");
 
@@ -165,8 +180,7 @@ export default async function OrderDetailsPage({
           <label className="grid gap-1 text-xs font-medium text-slate-600">Requested test<input readOnly value={[...new Set(order.tests.map((test) => displayPanelName(test.panel)))].join(", ")} className="h-9 min-w-0 border border-slate-200 bg-slate-50 px-2 text-sm text-slate-600" /></label>
           <label className="grid gap-1 text-xs font-medium text-slate-600 sm:col-span-2">Specimen<input name="reportSpecimen" maxLength={160} defaultValue={reportDetails.specimen} className="h-9 min-w-0 border border-slate-200 px-2 text-sm text-slate-800" /></label>
           <label className="grid gap-1 text-xs font-medium text-slate-600 sm:col-span-2">General comment<textarea name="generalComment" maxLength={2000} rows={3} defaultValue={reportDetails.generalComment} className="min-w-0 border border-slate-200 p-2 text-sm text-slate-800" /></label>
-          {[["RBCs", "filmRBCs"], ["WBCs", "filmWBCs"], ["Platelets", "filmPlatelets"], ["Malaria", "filmMalaria"]].map(([label, name]) => <label key={name} className="grid gap-1 text-xs font-medium text-slate-600">{label}<textarea name={name} maxLength={1000} rows={2} defaultValue={reportDetails[name as "filmRBCs" | "filmWBCs" | "filmPlatelets" | "filmMalaria"] || ""} className="min-w-0 border border-slate-200 p-2 text-sm text-slate-800" /></label>)}
-          <label className="grid gap-1 text-xs font-medium text-slate-600 sm:col-span-2">Film report comment<textarea name="filmReport" maxLength={3000} rows={3} defaultValue={reportDetails.filmReport} className="min-w-0 border border-slate-200 p-2 text-sm text-slate-800" /></label>
+          <label className="grid gap-1 text-xs font-medium text-slate-600 sm:col-span-2">Doctor's comment<textarea name="doctorComment" maxLength={2000} rows={3} defaultValue={reportDetails.doctorComment || ""} className="min-w-0 border border-slate-200 p-2 text-sm text-slate-800" /></label>
           <div className="sm:col-span-2 lg:col-span-4"><button type="submit" className="lis-button lis-button-submit">Save report details</button></div>
         </form> : <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 text-xs"><p><b>Surname:</b> {reportDetails.surname || "—"}</p><p><b>Other names:</b> {reportDetails.otherNames || "—"}</p><p><b>Laboratory No.:</b> {reportDetails.laboratoryNo}</p><p><b>Hospital No.:</b> {reportDetails.hospitalNo || "—"}</p><p><b>Age:</b> {reportDetails.age ? `${reportDetails.age} ${reportDetails.ageUnit}` : "—"}</p><p><b>Sex:</b> {reportDetails.sex || "—"}</p><p><b>Date:</b> {reportDetails.date}</p><p><b>Requested test:</b> {reportDetails.requestedTest}</p><p className="sm:col-span-2"><b>Specimen:</b> {reportDetails.specimen || "—"}</p></div>}
       </section>
@@ -185,7 +199,7 @@ export default async function OrderDetailsPage({
       </section>
 
       <div className="lis-section-heading">
-        <div><h2>Ordered investigations</h2><p>Enter any available results. Blank fields can still be submitted and will appear as “-” on the report.</p></div>
+        <div><h2>Ordered investigations</h2><p>Enter results in the matching report fields. Blank result cells remain blank on the printed form.</p></div>
         <span className="lis-test-count">{totalTests} {totalTests === 1 ?"test" :"tests"}</span>
       </div>
 

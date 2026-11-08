@@ -21,11 +21,13 @@ import { canAuthorizeReports, clearSession, createSession, requireUser } from "@
 import type { CataloguePriceRecord, ClientRecord, DepartmentRecord, LabOrder, LabReportDetails, OrderedTest, SpecimenRecord, UserRecord } from "@/lib/models";
 import type { CatalogueTest } from "@/lib/catalogue";
 import { displayPanelName } from "@/lib/catalogue";
+import { antibiogramAntibiotics } from "@/lib/catalogue";
 
 import { nextTestStatus, overallOrderStatus, type TestAction, type TestStatus } from "@/lib/workflow";
 import { testsBlockedByQualityControl } from "@/lib/quality-control";
 import { buildReleasedReportVersion } from "@/lib/reporting";
 import { syncOpenOrdersForPanel, syncOpenOrdersForPanels } from "@/lib/catalogue-sync";
+import { ageFromDateOfBirth, splitPatientName } from "@/lib/presentation";
 
 
 
@@ -43,11 +45,17 @@ const reportDetailsSchema = z.object({
   requestedTest: z.string().trim().max(1000),
   specimen: z.string().trim().max(160),
   generalComment: z.string().trim().max(2000),
+  doctorComment: z.string().trim().max(2000),
   filmReport: z.string().trim().max(3000),
   filmRBCs: z.string().trim().max(1000),
   filmWBCs: z.string().trim().max(1000),
   filmPlatelets: z.string().trim().max(1000),
   filmMalaria: z.string().trim().max(1000),
+  antibiogram: z.record(z.string(), z.object({
+    isolate1: z.string().max(24),
+    isolate2: z.string().max(24),
+    isolate3: z.string().max(24),
+  })),
 });
 
 async function testsWithRejectedSpecimens(database: Db, orderId: ObjectId, testCodes: string[]): Promise<Set<string>> {
@@ -1011,6 +1019,8 @@ if (definitions.length === 0 || selectedPanelNames.some((panel) => !definitions.
   });
   const accessionId = `LAB-${now.toISOString().slice(0, 10).replaceAll("-", "")}-${randomBytes(3).toString("hex").toUpperCase()}`;
   for (const specimen of specimenRecords) specimen.accessionId = accessionId;
+  const patientReportName = splitPatientName(client.fullName);
+  const patientReportAge = ageFromDateOfBirth(client.dateOfBirth, now.toISOString().slice(0, 10));
 
   const order: Omit<LabOrder, "_id"> = {
     accessionId,
@@ -1036,22 +1046,24 @@ if (definitions.length === 0 || selectedPanelNames.some((panel) => !definitions.
     },
 
     reportDetails: {
-      surname: "",
-      otherNames: client.fullName,
+      surname: patientReportName.surname,
+      otherNames: patientReportName.otherNames,
       laboratoryNo: accessionId,
-      hospitalNo: "",
-      age: "",
-      ageUnit: "years",
+      hospitalNo: client.patientId,
+      age: patientReportAge?.age ?? "",
+      ageUnit: patientReportAge?.ageUnit ?? "years",
       sex: client.sex ?? "",
       date: now.toISOString().slice(0, 10),
       requestedTest: selectedPanels.map(displayPanelName).join(", "),
       specimen: specimenType || [...new Set(tests.map((test) => test.specimenType).filter(Boolean))].join(", "),
       generalComment: "",
+      doctorComment: "",
       filmReport: "",
       filmRBCs: "",
       filmWBCs: "",
       filmPlatelets: "",
       filmMalaria: "",
+      antibiogram: {},
     },
 
     createdBy: user._id.toHexString(),
@@ -1307,11 +1319,17 @@ export async function updateReportDetails(formData: FormData): Promise<void> {
     requestedTest: "",
     specimen: value(formData, "reportSpecimen"),
     generalComment: value(formData, "generalComment"),
+    doctorComment: value(formData, "doctorComment"),
     filmReport: value(formData, "filmReport"),
     filmRBCs: value(formData, "filmRBCs"),
     filmWBCs: value(formData, "filmWBCs"),
     filmPlatelets: value(formData, "filmPlatelets"),
     filmMalaria: value(formData, "filmMalaria"),
+    antibiogram: Object.fromEntries(antibiogramAntibiotics.map(([code]) => [code, {
+      isolate1: value(formData, `antibiogram_${code}_1`).slice(0, 24),
+      isolate2: value(formData, `antibiogram_${code}_2`).slice(0, 24),
+      isolate3: value(formData, `antibiogram_${code}_3`).slice(0, 24),
+    }])),
   });
   if (!parsed.success || (parsed.data.age && !/^\d{1,3}(?:\.\d{1,2})?$/.test(parsed.data.age))) {
     safeError(`/orders/${orderId}`, "report-details-validation");
