@@ -196,8 +196,8 @@ export default async function ReportPage({
         </section>
 
         <section className="report-signatures" aria-label="Signature spaces">
-          <div><div className="report-signature-space" /><strong>LAB MANAGER SIGNATURE / DATE</strong></div>
-          <div><div className="report-signature-space" /><strong>LABORATORY SCIENTIST SIGNATURE / DATE</strong></div>
+          <div><div className="report-signature-space"><img src="/signature-placeholders/lab-manager.svg" alt="Lab Manager signature placeholder, not a real signature" /></div><strong>LAB MANAGER SIGNATURE / DATE</strong></div>
+          <div><div className="report-signature-space"><img src="/signature-placeholders/lab-scientist.svg" alt="Laboratory Scientist signature placeholder, not a real signature" /></div><strong>LABORATORY SCIENTIST SIGNATURE / DATE</strong></div>
         </section>
 
         <footer className="report-footer"><span>{order.clientSnapshot.fullName}</span><span>Accession {order.accessionId}</span><span>{isFinal ? "Authorized" : "Draft"}</span></footer>
@@ -404,7 +404,8 @@ export default async function ReportPage({
         .report-general-comment { height: auto; min-height: 10mm; border: 1px solid #758091; padding: 2mm; white-space: pre-wrap; overflow-wrap: anywhere; text-transform: none; }
         .report-signatures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12mm; margin-top: 7mm; font-size: 8px; color: ${BRAND.navy}; }
         .report-signatures > div { min-width: 0; }
-        .report-signature-space { height: 20mm; border-bottom: 1px solid #475569; margin-bottom: 2mm; }
+        .report-signature-space { display: flex; height: 20mm; align-items: center; justify-content: center; border-bottom: 1px solid #475569; margin-bottom: 2mm; }
+        .report-signature-space img { display: block; width: min(100%, 58mm); height: 16mm; object-fit: contain; }
         .report-draft-note { margin-top: 6mm; color: #073F9F; font-size: 9px; font-weight: 700; }
 
         .report-header,
